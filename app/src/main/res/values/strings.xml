@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">ViewModelLiveDataDemoEnrichi</string>
+    <string name="classic_label">Version classique : variable Activity</string>
+    <string name="viewmodel_label">Version ViewModel + LiveData : état conservé</string>
+    <string name="default_count">0</string>
+    <string name="increment">INCRÉMENTER</string>
+    <string name="decrement">DÉCRÉMENTER</string>
+    <string name="reset">RÉINITIALISER</string>
+</resources>
