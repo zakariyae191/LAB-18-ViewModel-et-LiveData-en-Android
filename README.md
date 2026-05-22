@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/e1df8b0d-86db-4791-98e5-d3567924d4eb
+
 # Lab Android — ViewModel + LiveData : survivre à la rotation d’écran
 
 Ce laboratoire Android en Java montre deux manières de gérer un compteur :
@@ -59,125 +63,6 @@ def lifecycle_version = "2.10.0"
 implementation "androidx.lifecycle:lifecycle-viewmodel:$lifecycle_version"
 implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
 ```
-
-## 4. Code explique
-
-### activity_main.xml
-
-Le layout est volontairement simple : une colonne centree, deux libelles pedagogiques, un compteur tres visible et trois boutons.
-
-```xml
-<TextView
-    android:id="@+id/tvCount"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:gravity="center"
-    android:text="@string/default_count"
-    android:textSize="80sp" />
-
-<Button
-    android:id="@+id/btnIncrement"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:text="@string/increment" />
-```
-
-### ClassicCounterActivity.java
-
-Cette classe montre la version classique. La variable `count` appartient a l'instance de l'`Activity`.
-
-```java
-private int count = 0;
-
-btnIncrement.setOnClickListener(v -> {
-    count++;
-    updateUI();
-});
-```
-
-Sans sauvegarde manuelle, une rotation recree l'`Activity` et `count` revient a `0`.
-
-La classe contient aussi une sauvegarde avec `onSaveInstanceState` :
-
-```java
-@Override
-protected void onSaveInstanceState(@NonNull Bundle outState) {
-    super.onSaveInstanceState(outState);
-    outState.putInt(COUNT_KEY, count);
-}
-```
-
-Cela marche bien pour un `int`, mais devient limite pour de la logique plus riche.
-
-### CounterViewModel.java
-
-Le `ViewModel` garde l'etat UI et expose une version en lecture seule de la donnee.
-
-```java
-private final MutableLiveData<Integer> countLiveData = new MutableLiveData<>();
-
-public LiveData<Integer> getCount() {
-    return countLiveData;
-}
-```
-
-`MutableLiveData` reste dans le `ViewModel`, car lui seul doit modifier la valeur. L'`Activity` observe seulement un `LiveData<Integer>`.
-
-```java
-public void increment() {
-    Integer currentValue = countLiveData.getValue();
-    if (currentValue == null) {
-        currentValue = 0;
-    }
-    countLiveData.setValue(currentValue + 1);
-}
-```
-
-`setValue` s'utilise depuis le thread principal. Pour un thread de fond, la methode bonus utilise `postValue` :
-
-```java
-public void incrementFromBackground() {
-    new Thread(new Runnable() {
-        @Override
-        public void run() {
-            Integer currentValue = countLiveData.getValue();
-            if (currentValue == null) {
-                currentValue = 0;
-            }
-            countLiveData.postValue(currentValue + 1);
-        }
-    }).start();
-}
-```
-
-### MainActivity.java avec ViewModel + LiveData
-
-L'`Activity` recupere son `ViewModel` :
-
-```java
-viewModel = new ViewModelProvider(this).get(CounterViewModel.class);
-```
-
-`this` est un `LifecycleOwner`, car `AppCompatActivity` implemente le cycle de vie AndroidX.
-
-```java
-viewModel.getCount().observe(this, new Observer<Integer>() {
-    @Override
-    public void onChanged(Integer newCount) {
-        tvCount.setText(String.valueOf(newCount));
-    }
-});
-```
-
-Les boutons ne contiennent pas la logique metier :
-
-```java
-btnIncrement.setOnClickListener(v -> viewModel.increment());
-btnDecrement.setOnClickListener(v -> viewModel.decrement());
-btnReset.setOnClickListener(v -> viewModel.reset());
-```
-
-L'UI est reconstruite apres rotation, mais le `ViewModel` conserve la valeur. `LiveData` renvoie la derniere valeur au nouvel observer.
 
 ## 5. Tests a faire
 
